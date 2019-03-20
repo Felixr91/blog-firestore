@@ -8,6 +8,8 @@ import firebase from 'firebase'
 
 Vue.config.productionTip = false
 
+store.dispatch('authenticate')
+
 /* eslint-disable no-new */
 //@ts-ignore
 new Vue({
