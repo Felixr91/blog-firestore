@@ -11,15 +11,49 @@ vue.use(vuex)
 
 let store = new vuex.Store({
   state: {
-    user: {}
+    user: {},
+    blogs: [],
+    activeBlog: {}
 
   },
   mutations: {
     setUser(state, user) {
       state.user = user
-    }
+    },
+    setBlogs(state, blogs) {
+      state.blogs = blogs
+    },
+    setActiveBlog(state, activeBlog) {
+      state.activeBlog = activeBlog
+    },
   },
   actions: {
+    //BLOGS
+    addBlog({ commit, dispatch }, blog) {
+      db.collection("blogs").add(blog).then(docRef => {
+        console.log("Blog created with id:", docRef.id)
+        dispatch("getBlogs")
+      })
+    },
+    getBlogs({ commit, dispatch }) {
+      db.collection("blogs").get().then(querySnapShot => {
+        var blogs = []
+        querySnapShot.forEach(docRef => {
+          var blog = docRef.data()
+          blog.id = docRef.id
+          blogs.push(blog)
+        })
+        commit("setBlogs", blogs)
+      })
+    },
+    getActiveBlog({ commit, dispatch }, blogId) {
+      db.collection("blogs").doc(blogId).get().then(docRef => {
+        var blog = docRef.data()
+        blog.id = docRef.id
+        commit("setActiveBlog", blog)
+      })
+    },
+    // USER AUTHENTICATION
     register({ commit, dispatch }, user) {
       firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
         .then(res => {
