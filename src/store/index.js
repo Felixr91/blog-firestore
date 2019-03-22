@@ -5,6 +5,7 @@ import vuex from 'vuex'
 import router from '../router'
 import firebase from 'firebase'
 import db from '../utils/firebaseInit'
+// import { getEnabledCategories } from 'trace_events';
 
 // We are letting vue know that we want it to use the vuex module we pulled in so that we can create a vuex store.
 vue.use(vuex)
@@ -29,10 +30,18 @@ let store = new vuex.Store({
   },
   actions: {
     //BLOGS
-    addBlog({ commit, dispatch }, blog) {
+    addBlog({ commit, dispatch, state }, blog) {
+      blog.creatorId = state.user.uid
       db.collection("blogs").add(blog).then(docRef => {
         console.log("Blog created with id:", docRef.id)
         dispatch("getBlogs")
+      })
+    },
+    deleteBlog({ commit, dispatch }, blog) {
+      console.log(blog)
+      db.collection("blogs").doc(blog).delete().then(docRef => {
+        dispatch("getBlogs")
+        router.push('/dashboard')
       })
     },
     getBlogs({ commit, dispatch }) {
