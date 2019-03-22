@@ -1,12 +1,11 @@
 <template>
   <div class="dashboard row justify-content-around">
-
     <div class="col-12">
       <h1 class="col-12 title">Blogs</h1>
       <h4>Add Blog</h4>
     </div>
     <div class="col-12" v-if="!adding">
-      <i class="far fa-plus-square fa-3x green-text margin-bottom" @click="adding = true"></i>
+      <i class="far fa-plus-square fa-3x text-success margin-bottom" @click="adding = true"></i>
     </div>
     <div class="col-4" v-if="adding">
       <i class="far fa-minus-square fa-3x red-text" @click="adding = false"></i>
@@ -25,8 +24,9 @@
     <div class="col-12">
       <div class="container-fluid">
         <div class="row justify-content-between">
-          <div class="col-4" v-for="blog in blogs" @click="viewBlog(blog)">
-            <div class="card text-white bg-dark mb-3" style="max-width: 40rem;">
+          <div class="col-4" v-for="blog in blogs" @click="viewBlog(blog)"
+            v-if="blog.creatorId == user.uid || blog.published">
+            <div class="card text-white bg-dark" style="max-width: 40rem;">
               <div class="card-body">
                 <h3 class="card-title">{{blog.name}}</h3>
                 <p class="card-text hide">{{blog.description}}</p>
@@ -54,6 +54,9 @@
     computed: {
       blogs() {
         return this.$store.state.blogs
+      },
+      user() {
+        return this.$store.state.user
       }
     },
     methods: {

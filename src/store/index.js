@@ -1,32 +1,31 @@
-// This is giving us access to use the vue and vuex modules we installed, as well as access to the router vue is exporting inside of the router folder.We wont need the router just yet, but it will come into play later. 
-
 import vue from 'vue'
 import vuex from 'vuex'
 import router from '../router'
 import firebase from 'firebase'
 import db from '../utils/firebaseInit'
-// import { getEnabledCategories } from 'trace_events';
 
-// We are letting vue know that we want it to use the vuex module we pulled in so that we can create a vuex store.
 vue.use(vuex)
 
 let store = new vuex.Store({
   state: {
     user: {},
+    activeBlog: {},
     blogs: [],
-    activeBlog: {}
-
+    comments: []
   },
   mutations: {
+    setActiveBlog(state, activeBlog) {
+      state.activeBlog = activeBlog
+    },
     setUser(state, user) {
       state.user = user
     },
     setBlogs(state, blogs) {
       state.blogs = blogs
     },
-    setActiveBlog(state, activeBlog) {
-      state.activeBlog = activeBlog
-    },
+    setComments(state, comments) {
+      state.comments = comments
+    }
   },
   actions: {
     //BLOGS
@@ -36,13 +35,15 @@ let store = new vuex.Store({
         console.log("Blog created with id:", docRef.id)
         dispatch("getBlogs")
       })
+        .catch(err => { console.error(err) })
     },
-    deleteBlog({ commit, dispatch }, blog) {
-      console.log(blog)
-      db.collection("blogs").doc(blog).delete().then(docRef => {
+    deleteBlog({ commit, dispatch, state }, blogId) {
+      db.collection("blogs").doc(blogId).delete().then(() => {
+        console.log("Blog deleted")
         dispatch("getBlogs")
-        router.push('/dashboard')
+        router.push("/dashboard")
       })
+        .catch(err => { console.error(err) })
     },
     getBlogs({ commit, dispatch }) {
       db.collection("blogs").get().then(querySnapShot => {
@@ -54,18 +55,51 @@ let store = new vuex.Store({
         })
         commit("setBlogs", blogs)
       })
+        .catch(err => { console.error(err) })
     },
     getActiveBlog({ commit, dispatch }, blogId) {
       db.collection("blogs").doc(blogId).get().then(docRef => {
         var blog = docRef.data()
         blog.id = docRef.id
         commit("setActiveBlog", blog)
+        dispatch("getComments", blog.id)
       })
+        .catch(err => { console.error(err) })
+    },
+    updateBlog({ commit, dispatch }, blog) {
+      db.collection("blogs").doc(blog.id).update(blog).then(() => {
+        dispatch("getActiveBlog", blog.id)
+      })
+        .catch(err => { console.error(err) })
+    },
+    // COMMENTS
+    addComment({ commit, dispatch, state }, comment) {
+      comment.userName = state.user.displayName
+      comment.creatorId = state.user.uid
+      comment.blogId = state.activeBlog.id
+      db.collection("comments").add(comment).then(docRef => {
+        console.log("Comment created with id:", docRef.id)
+        dispatch("getComments", state.activeBlog.id)
+      })
+        .catch(err => { console.error(err) })
+    },
+    getComments({ commit, dispatch }, blogId) {
+      db.collection("comments").where("blogId", "==", blogId).get().then(querySnapShot => {
+        var comments = []
+        querySnapShot.forEach(docRef => {
+          var comment = docRef.data()
+          comment.id = docRef.id
+          comments.push(comment)
+        })
+        commit("setComments", comments)
+      })
+        .catch(err => { console.error(err) })
     },
     // USER AUTHENTICATION
     register({ commit, dispatch }, user) {
       firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
         .then(res => {
+          router.push("/dashboard")
           commit("setUser", res.user)
           firebase.auth().currentUser.updateProfile({ displayName: user.displayName })
             .then(res => {
@@ -85,21 +119,20 @@ let store = new vuex.Store({
         .then(res => {
           router.push('/dashboard')
           commit("setUser", res.user)
-          console.log(res.user)
         })
         .catch(err => { console.error(err) })
     },
     logout({ commit, dispatch }) {
       firebase.auth().signOut()
         .then(res => {
-          router.push("/login")
+          router.push('/login')
           commit('setUser', {})
         })
         .catch(err => { console.error(err) })
     },
     authenticate({ commit, dispatch }) {
       // you can change the default route here
-      //if someone is signed in, it goes to dashboard, if not, go to login
+      //if someone is signed in, it goes to dashboard, if not, go to auth
       firebase.auth().onAuthStateChanged(user => {
         if (user) {
           commit("setUser", user)
