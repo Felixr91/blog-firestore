@@ -84,7 +84,7 @@ let store = new vuex.Store({
         .catch(err => { console.error(err) })
     },
     getComments({ commit, dispatch }, blogId) {
-      db.collection("comments").where("blogId", "==", blogId).get().then(querySnapShot => {
+      db.collection("blogs").doc(blogId).collection("comments").get().then(querySnapShot => {
         var comments = []
         querySnapShot.forEach(docRef => {
           var comment = docRef.data()
@@ -93,7 +93,6 @@ let store = new vuex.Store({
         })
         commit("setComments", comments)
       })
-        .catch(err => { console.error(err) })
     },
     // USER AUTHENTICATION
     register({ commit, dispatch }, user) {
